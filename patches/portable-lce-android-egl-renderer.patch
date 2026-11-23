@@ -1,14 +1,18 @@
 diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/renderer/gl/GLRenderer.cpp
 --- a/targets/platform/renderer/gl/GLRenderer.cpp
 +++ b/targets/platform/renderer/gl/GLRenderer.cpp
-@@
+@@ -4,6 +4,9 @@
+ #include "SDL_error.h"
+ #include "SDL_events.h"
  #include "SDL_stdinc.h"
  #include "SDL_video.h"
 +#ifdef __ANDROID__
 +#include <EGL/egl.h>
 +#endif
  #include "java/ByteBuffer.h"
-@@
+ #include "java/FloatBuffer.h"
+ #include "java/IntBuffer.h"
+@@ -105,5 +105,11 @@
  static const int MAX_SHARED_CTXS = 6;
 +#ifdef __ANDROID__
 +static EGLSurface s_sharedWins[MAX_SHARED_CTXS] = {};
@@ -19,15 +23,15 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
  static SDL_GLContext s_sharedCtxs[MAX_SHARED_CTXS] = {};
 +#endif
  static int s_sharedCtxCount = 0;
-@@
+ static int s_nextSharedCtx = 0;
+@@ -695,17 +695,51 @@ void GLRenderer::Initialise() {
      SDL_GL_MakeCurrent(s_window, s_glContext);
 +#ifdef __ANDROID__
-+    // SDL owns the main EGL context. Create worker contexts and 1x1 pbuffer
-+    // surfaces directly because Android does not support hidden SDL windows.
++    // Android SDL exposes the main EGL context, but hidden SDL windows are unavailable.
 +    s_eglDisplay = eglGetCurrentDisplay();
 +    EGLint cfg_id = 0;
 +    EGLint cfg_count = 0;
-+    EGLConfig cfg;
++    EGLConfig cfg = nullptr;
 +    if (s_eglDisplay != EGL_NO_DISPLAY &&
 +        eglQueryContext(s_eglDisplay, (EGLContext)s_glContext,
 +                        EGL_CONFIG_ID, &cfg_id)) {
@@ -67,9 +71,12 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 +#endif
              break;
          }
-@@
-     if (s_glCtx) {
-         for (int i = 0; i < s_sharedCtxCount; i++) {
+         s_sharedWins[s_sharedCtxCount] = w;
+         s_sharedCtxs[s_sharedCtxCount] = ctx;
+         s_sharedCtxCount++;
+     }
+     SDL_GL_MakeCurrent(s_window, s_glContext);
+@@ -730,4 +764,8 @@ void GLRenderer::InitialiseContext() {
              if (s_sharedCtxs[i] == s_glCtx) {
 +#ifdef __ANDROID__
 +                eglMakeCurrent(s_eglDisplay, s_sharedWins[i], s_sharedWins[i],
@@ -78,7 +85,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
                  SDL_GL_MakeCurrent(s_sharedWins[i], s_glCtx);
 +#endif
                  return;
-@@
+@@ -746,6 +784,11 @@ void GLRenderer::InitialiseContext() {
      for (int i = 0; i < s_sharedCtxCount; i++) {
 -        if (s_sharedCtxs[i] == shared)
 +        if (s_sharedCtxs[i] == shared) {
@@ -89,7 +96,9 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
              SDL_GL_MakeCurrent(s_sharedWins[i], shared);
 +#endif
 +        }
-@@
+     }
+     s_glCtx = shared;
+@@ -812,5 +855,10 @@ void GLRenderer::Shutdown() {
      for (int i = 0; i < s_sharedCtxCount; i++) {
 +#ifdef __ANDROID__
 +        if (s_sharedCtxs[i]) eglDestroyContext(s_eglDisplay, s_sharedCtxs[i]);
@@ -99,13 +108,17 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
          if (s_sharedWins[i]) SDL_DestroyWindow(s_sharedWins[i]);
 +#endif
      }
+     SDL_Quit();
+ }
 diff --git a/targets/platform/renderer/meson.build b/targets/platform/renderer/meson.build
 --- a/targets/platform/renderer/meson.build
 +++ b/targets/platform/renderer/meson.build
-@@
+@@ -7,7 +7,10 @@
+ 
  if get_option('renderer') == 'gles'
      platform_renderer_gl_dependencies += dependency('glesv2')
 +    if host_machine.system() == 'android'
 +        platform_renderer_gl_dependencies += cc.find_library('EGL', required: true)
 +    endif
      platform_renderer_gl_defs = ['-DGLES']
+ else
