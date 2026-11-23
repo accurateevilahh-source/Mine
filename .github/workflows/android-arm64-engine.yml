@@ -76,6 +76,7 @@ jobs:
             --cross-file "$GITHUB_WORKSPACE/android-aarch64.ini" \
             --wrap-mode=forcefallback \
             -Dbuildtype=debug \
+            -Dunity=off \
             -Ddefault_library=static \
             -Drenderer=gles \
             -Dui_backend=java \
