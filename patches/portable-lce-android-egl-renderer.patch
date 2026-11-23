@@ -1,7 +1,7 @@
 diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/renderer/gl/GLRenderer.cpp
 --- a/targets/platform/renderer/gl/GLRenderer.cpp
 +++ b/targets/platform/renderer/gl/GLRenderer.cpp
-@@ -4,6 +4,9 @@
+@@ -4,7 +4,10 @@
  #include "SDL_error.h"
  #include "SDL_events.h"
  #include "SDL_stdinc.h"
@@ -12,7 +12,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
  #include "java/ByteBuffer.h"
  #include "java/FloatBuffer.h"
  #include "java/IntBuffer.h"
-@@ -102,8 +105,14 @@
+@@ -103,7 +106,13 @@
  static std::once_flag s_glCtxKeyOnce;
  
  static const int MAX_SHARED_CTXS = 6;
@@ -26,7 +26,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 +#endif
  static int s_sharedCtxCount = 0;
  static int s_nextSharedCtx = 0;
-@@ -692,19 +701,54 @@ void GLRenderer::Initialise() {
+@@ -693,14 +702,53 @@ void GLRenderer::Initialise() {
      s_glCtx = s_glContext;
  
      SDL_GL_MakeCurrent(s_window, s_glContext);
@@ -80,7 +80,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 +#endif
              break;
          }
-@@ -727,7 +771,11 @@ void GLRenderer::InitialiseContext() {
+@@ -730,6 +778,11 @@ void GLRenderer::InitialiseContext() {
      if (s_glCtx) {
          for (int i = 0; i < s_sharedCtxCount; i++) {
              if (s_sharedCtxs[i] == s_glCtx) {
@@ -92,7 +92,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 +#endif
                  return;
              }
-@@ -746,7 +794,11 @@ void GLRenderer::InitialiseContext() {
+@@ -748,5 +801,11 @@ void GLRenderer::InitialiseContext() {
      for (int i = 0; i < s_sharedCtxCount; i++) {
 -        if (s_sharedCtxs[i] == shared)
 +        if (s_sharedCtxs[i] == shared) {
@@ -105,7 +105,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 +        }
      }
      s_glCtx = shared;
-@@ -812,8 +864,13 @@ void GLRenderer::Shutdown() {
+@@ -813,7 +873,12 @@ void GLRenderer::Shutdown() {
      }
      for (int i = 0; i < s_sharedCtxCount; i++) {
 +#ifdef __ANDROID__
@@ -121,7 +121,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 diff --git a/targets/platform/renderer/meson.build b/targets/platform/renderer/meson.build
 --- a/targets/platform/renderer/meson.build
 +++ b/targets/platform/renderer/meson.build
-@@ -7,7 +7,10 @@
+@@ -9,4 +9,7 @@
  if get_option('renderer') == 'gles'
      platform_renderer_gl_dependencies += dependency('glesv2')
 +    if host_machine.system() == 'android'
