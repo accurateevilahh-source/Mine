@@ -126,6 +126,9 @@ jobs:
           replace_regex("targets/minecraft/client/multiplayer/MultiPlayerChunkCache.cpp",
               r"if\s*\(\s*std::atomic_ref<LevelChunk\*>\(cache\[idx\]\)\s*\.compare_exchange_strong\(expected,\s*chunk,\s*std::memory_order_release\)\s*\)",
               "if (__atomic_compare_exchange_n(&cache[idx], &expected, chunk, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED))")
+          replace_regex("targets/minecraft/server/level/ServerChunkCache.cpp",
+              r"if\s*\(\s*std::atomic_ref<LevelChunk\*>\(cache\[idx\]\)\s*\.compare_exchange_strong\(expected,\s*chunk,\s*std::memory_order_release\)\s*\)",
+              "if (__atomic_compare_exchange_n(&cache[idx], &expected, chunk, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED))")
           replace("targets/platform/renderer/gl/GLRenderer.cpp",
               "#include \"platform/renderer/renderer.h\"",
               """#include \"platform/renderer/renderer.h\"\n\n#ifdef __ANDROID__\n// Legacy fixed-function enum values used only as internal state identifiers.\n#ifndef GL_PROJECTION\n#define GL_PROJECTION 0x1701\n#endif\n#ifndef GL_MODELVIEW_MATRIX\n#define GL_MODELVIEW_MATRIX 0x0BA6\n#endif\n#ifndef GL_PROJECTION_MATRIX\n#define GL_PROJECTION_MATRIX 0x0BA7\n#endif\n#ifndef GL_EXP\n#define GL_EXP 0x0800\n#endif\n#endif""")
