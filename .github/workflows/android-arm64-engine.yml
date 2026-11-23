@@ -169,7 +169,7 @@ jobs:
                            "subprojects/SDL2-2.32.8/src/core/android/SDL_android.c"):
               p = Path(relative)
               s = p.read_text()
-              define = "#ifdef __ANDROID__\\n#define SDL_HIDAPI_DISABLED 1\\n#endif\\n"
+              define = "#ifdef __ANDROID__\n#define SDL_HIDAPI_DISABLED 1\n#endif\n"
               if define not in s:
                   p.write_text(define + s)
 
