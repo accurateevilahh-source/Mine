@@ -125,11 +125,14 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 diff --git a/targets/platform/renderer/meson.build b/targets/platform/renderer/meson.build
 --- a/targets/platform/renderer/meson.build
 +++ b/targets/platform/renderer/meson.build
-@@ -9,4 +9,7 @@
+@@ -9,4 +9,10 @@
  if get_option('renderer') == 'gles'
-     platform_renderer_gl_dependencies += dependency('glesv2')
 +    if host_machine.system() == 'android'
++        # Android NDK provides GLES/EGL as system libraries, not pkg-config modules.
++        platform_renderer_gl_dependencies += cc.find_library('GLESv2', required: true)
 +        platform_renderer_gl_dependencies += cc.find_library('EGL', required: true)
++    else
+     platform_renderer_gl_dependencies += dependency('glesv2')
 +    endif
      platform_renderer_gl_defs = ['-DGLES']
  else
