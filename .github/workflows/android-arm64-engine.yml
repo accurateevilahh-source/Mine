@@ -30,8 +30,7 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip ninja-build pkg-config
-          python3 -m pip install --user meson
+          sudo apt-get install -y meson ninja-build pkg-config file
 
       - name: Check out Portable LCE
         run: |
@@ -162,7 +161,7 @@ jobs:
           LIB="$(find build-android -type f -name 'libMinecraftClient.so' -print -quit)"
           test -n "$LIB"
           file "$LIB"
-          llvm-readelf -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
+          "$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
           mkdir -p "$GITHUB_WORKSPACE/dist"
           cp "$LIB" "$GITHUB_WORKSPACE/dist/libMinecraftClient.so"
 
