@@ -70,11 +70,11 @@ jobs:
           replace("targets/platform/stubs.h",
               "#include \"renderer/gl/gl_compat.h\"",
               """#include \"renderer/gl/gl_compat.h\"\n\n#ifdef __ANDROID__\n#ifndef GL_COLOR_MATERIAL\n#define GL_COLOR_MATERIAL 0x0B57\n#endif\n#ifndef GL_AMBIENT_AND_DIFFUSE\n#define GL_AMBIENT_AND_DIFFUSE 0x1602\n#endif\n#ifndef GL_POLYGON_OFFSET_LINE
-#define GL_POLYGON_OFFSET_LINE 0x2A02
-#endif
-// GLES has no fixed-function normal, material, depth-clear, or shade-model calls.
-#define glNormal3f(x, y, z) ((void)0)
-#define glColorMaterial(face, mode) ((void)0)\n#define glClearDepth glClearDepthf\n#ifdef glShadeModel\n#undef glShadeModel\n#endif\n#define glShadeModel(mode) ((void)0)\n#endif""")
+              #define GL_POLYGON_OFFSET_LINE 0x2A02
+              #endif
+              // GLES has no fixed-function normal, material, depth-clear, or shade-model calls.
+              #define glNormal3f(x, y, z) ((void)0)
+              #define glColorMaterial(face, mode) ((void)0)\n#define glClearDepth glClearDepthf\n#ifdef glShadeModel\n#undef glShadeModel\n#endif\n#define glShadeModel(mode) ((void)0)\n#endif""")
           replace("targets/platform/stubs.h",
               "    static void glShadeModel(int mode) { ::glShadeModel(mode); }",
               """#ifdef __ANDROID__\n    static void glShadeModel(int) {}\n#else\n    static void glShadeModel(int mode) { ::glShadeModel(mode); }\n#endif""")
