@@ -75,21 +75,12 @@ index 0000000..0000000 100644
  #include <fstream>
  
  #if defined(__linux__)
-@@ -83,6 +84,10 @@ std::filesystem::path StdFilesystem::getBasePath() {
- #elif defined(__APPLE__)
-     char buf[4096];
-     uint32_t size = sizeof(buf);
-     if (_NSGetExecutablePath(buf, &size) == 0) {
-         return std::filesystem::path(buf).parent_path();
-     }
+@@ -1,7 +1,10 @@
+-#elif defined(__linux__)
 +#elif defined(__ANDROID__)
 +    if (const char* path = std::getenv("MC_PATH"); path && *path)
 +        return std::filesystem::path(path);
- #elif defined(__linux__)
++#elif defined(__linux__)
      return std::filesystem::read_symlink("/proc/self/exe").parent_path();
  #else
      return std::filesystem::current_path();
- #endif
- }
- 
- std::filesystem::path StdFilesystem::getUserDataPath() { return getBasePath(); }
