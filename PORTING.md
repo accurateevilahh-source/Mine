@@ -52,3 +52,25 @@ No Android engine library has been produced. The launcher build requires `androi
 2. Build an AArch64 Android shared library with the NDK and resolve compile/link errors.
 3. Package it through the 4JCraft launcher.
 4. Test install, launch, rendering, input, audio, and world storage on an Android device before release.
+
+
+## Current recovery work (2026-11-23)
+
+The first rebaseable recovery overlays are now committed on the `android-engine-recovery` branch:
+
+- `patches/portable-lce-android-recovery.patch`
+  - Adds Android to the current Meson platform selection.
+  - Builds the application target as `libMinecraftClient.so` on Android, matching the launcher's expected library name.
+  - Uses the launcher's `MC_PATH` environment variable for the game-data base directory rather than assuming a desktop executable path.
+  - Removes the app-level unconditional GLEW dependency; the renderer backend selects GLES or desktop GL itself.
+- `patches/portable-lce-android-egl-renderer.patch`
+  - Adapts the current renderer's worker-context setup to EGL pbuffer surfaces on Android, instead of creating hidden SDL windows.
+  - Links EGL for the Android GLES renderer.
+
+### How this maps to the launcher
+
+The launcher's `MainActivity2` sets `MC_PATH` from its selected directory before loading `SDL2` and `MinecraftClient`, and its SDL activity resolves the native entry point named `main`. This is why the recovered app target is a shared library named `MinecraftClient`, while the game entry point remains the current desktop main translation unit.
+
+### Validation status
+
+These are source-level recovery overlays, not a completed build. They have not yet been applied to a local checkout or compiled with the Android NDK. In particular, the Android SDL2 dependency/toolchain setup and EGL context lifecycle still need a real ARM64 NDK build and device test. Do not mark the engine recovered until the patch applies cleanly and produces a loadable `libMinecraftClient.so`.
