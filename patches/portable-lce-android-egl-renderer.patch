@@ -85,8 +85,11 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
          for (int i = 0; i < s_sharedCtxCount; i++) {
              if (s_sharedCtxs[i] == s_glCtx) {
 +#ifdef __ANDROID__
-+                eglMakeCurrent(s_eglDisplay, s_sharedWins[i], s_sharedWins[i],
-+                               (EGLContext)s_glCtx);
++                if (eglMakeCurrent(s_eglDisplay, s_sharedWins[i], s_sharedWins[i],
++                                   (EGLContext)s_glCtx) != EGL_TRUE) {
++                    s_glCtx = nullptr;
++                    return;
++                }
 +#else
                  SDL_GL_MakeCurrent(s_sharedWins[i], s_glCtx);
 +#endif
@@ -97,8 +100,9 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 -        if (s_sharedCtxs[i] == shared)
 +        if (s_sharedCtxs[i] == shared) {
 +#ifdef __ANDROID__
-+            eglMakeCurrent(s_eglDisplay, s_sharedWins[i], s_sharedWins[i],
-+                           (EGLContext)shared);
++            if (eglMakeCurrent(s_eglDisplay, s_sharedWins[i], s_sharedWins[i],
++                               (EGLContext)shared) != EGL_TRUE)
++                return;
 +#else
              SDL_GL_MakeCurrent(s_sharedWins[i], shared);
 +#endif
