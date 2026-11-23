@@ -1,0 +1,95 @@
+diff --git a/meson.build b/meson.build
+index 0000000..0000000 100644
+--- a/meson.build
++++ b/meson.build
+@@ -103,7 +103,7 @@ subdir('targets/platform')
+ # MARK: platform configuration
+ 
+-if host_machine.system() in ['linux', 'windows', 'darwin']
++if host_machine.system() in ['linux', 'windows', 'darwin', 'android']
+     platform_fs_dep = platform_fs_std_dep
+     platform_game_dep = platform_game_stub_dep
+     platform_input_dep = platform_input_sdl2_dep
+diff --git a/targets/app/meson.build b/targets/app/meson.build
+index 0000000..0000000 100644
+--- a/targets/app/meson.build
++++ b/targets/app/meson.build
+@@ -39,7 +39,6 @@ app_dependencies += [
+     dependency('miniaudio'),  # todo: remove once PlatformSound is used
+     dependency('stb'),
+     dependency('simdutf'),
+-    dependency('glew'),  # TODO remove
+     java_dep,
+     nbt_dep,
+     util_dep,
+@@ -59,16 +58,30 @@ app_dependencies += [
+     # technically also GL/EGL, but the GL renderer needs to not leak GL shit to fix that
+ ]
+ 
+-app = executable(
+-    'Minecraft.Client',
+-    app_common_sources + app_platform_sources + localisation[1],
+-    include_directories: include_directories('..'),
+-    dependencies: app_dependencies,
+-    cpp_args: global_cpp_args + global_cpp_defs,
+-    link_args: app_link_args,
+-    install: true,
+-    install_dir: '',
+-)
++if host_machine.system() == 'android'
++    # SDLActivity loads this shared object by name. The launcher expects
++    # libMinecraftClient.so in its arm64-v8a native-library directory.
++    app = shared_library(
++        'MinecraftClient',
++        app_common_sources + app_platform_sources + localisation[1],
++        include_directories: include_directories('..'),
++        dependencies: app_dependencies,
++        cpp_args: global_cpp_args + global_cpp_defs,
++        link_args: app_link_args,
++        install: true,
++        install_dir: '',
++    )
++else
++    app = executable(
++        'Minecraft.Client',
++        app_common_sources + app_platform_sources + localisation[1],
++        include_directories: include_directories('..'),
++        dependencies: app_dependencies,
++        cpp_args: global_cpp_args + global_cpp_defs,
++        link_args: app_link_args,
++        install: true,
++        install_dir: '',
++    )
++endif
+ 
+ custom_target(
+     'copy_assets_to_app',
+diff --git a/targets/platform/fs/std/StdFilesystem.cpp b/targets/platform/fs/std/StdFilesystem.cpp
+index 0000000..0000000 100644
+--- a/targets/platform/fs/std/StdFilesystem.cpp
++++ b/targets/platform/fs/std/StdFilesystem.cpp
+@@ -1,6 +1,7 @@
+ #include "StdFilesystem.h"
+ 
++#include <cstdlib>
+ #include <fstream>
+ 
+ #if defined(__linux__)
+@@ -83,6 +84,10 @@ std::filesystem::path StdFilesystem::getBasePath() {
+ #elif defined(__APPLE__)
+     char buf[4096];
+     uint32_t size = sizeof(buf);
+     if (_NSGetExecutablePath(buf, &size) == 0) {
+         return std::filesystem::path(buf).parent_path();
+     }
++#elif defined(__ANDROID__)
++    if (const char* path = std::getenv("MC_PATH"); path && *path)
++        return std::filesystem::path(path);
+ #elif defined(__linux__)
+     return std::filesystem::read_symlink("/proc/self/exe").parent_path();
+ #else
+     return std::filesystem::current_path();
+ #endif
+ }
+ 
+ std::filesystem::path StdFilesystem::getUserDataPath() { return getBasePath(); }
