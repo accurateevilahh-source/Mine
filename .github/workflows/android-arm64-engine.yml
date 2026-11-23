@@ -40,10 +40,10 @@ jobs:
 
       - name: Validate and apply Android recovery patches
         run: |
-          git -C upstream apply --check "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
-          git -C upstream apply --check "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
-          git -C upstream apply "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
-          git -C upstream apply "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
+          git -C upstream apply --recount --check "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
+          git -C upstream apply --recount --check "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
+          git -C upstream apply --recount "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
+          git -C upstream apply --recount "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
 
       - name: Create Android ARM64 Meson cross file
         shell: bash
