@@ -85,6 +85,7 @@ index 0000000..0000000 100644
 +#elif defined(__ANDROID__)
 +    if (const char* path = std::getenv("MC_PATH"); path && *path)
 +        return std::filesystem::path(path);
++    return std::filesystem::current_path();
  #elif defined(__linux__)
      return std::filesystem::read_symlink("/proc/self/exe").parent_path();
  #else
