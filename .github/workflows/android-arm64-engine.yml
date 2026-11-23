@@ -93,6 +93,9 @@ jobs:
           replace("targets/minecraft/client/Minecraft.cpp",
               "    glShadeModel(GL_SMOOTH);",
               "    // GLES does not expose fixed-function glShadeModel.")
+          replace("targets/minecraft/client/renderer/entity/SlimeRenderer.cpp",
+              "        glEnable(GL_NORMALIZE);",
+              "        // GLES has no fixed-function GL_NORMALIZE state.")
           replace("targets/platform/stubs.h",
               "#undef GL_ARRAY_BUFFER_ARB",
               """#ifdef __ANDROID__
