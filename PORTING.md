@@ -65,6 +65,7 @@ The first rebaseable recovery overlays are now committed on the `android-engine-
   - Removes the app-level unconditional GLEW dependency; the renderer backend selects GLES or desktop GL itself.
 - `patches/portable-lce-android-egl-renderer.patch`
   - Adapts the current renderer's worker-context setup to EGL pbuffer surfaces on Android, instead of creating hidden SDL windows.
+  - Creates GLES 3 worker contexts sharing the SDL-owned main context, switches worker threads with `eglMakeCurrent`, checks context activation failures, and destroys the EGL contexts/surfaces during shutdown.
   - Links EGL for the Android GLES renderer.
 
 ### How this maps to the launcher
@@ -73,4 +74,4 @@ The launcher's `MainActivity2` sets `MC_PATH` from its selected directory before
 
 ### Validation status
 
-These are source-level recovery overlays, not a completed build. They have not yet been applied to a local checkout or compiled with the Android NDK. In particular, the Android SDL2 dependency/toolchain setup and EGL context lifecycle still need a real ARM64 NDK build and device test. Do not mark the engine recovered until the patch applies cleanly and produces a loadable `libMinecraftClient.so`.
+The EGL source overlay is now drafted with corrected unified-diff ranges, but it has not yet been applied to a local checkout or compiled. The Android SDL2 dependency/toolchain setup, EGL config's pbuffer support, and runtime context lifecycle still need an ARM64 NDK build and device test. Do not mark the engine recovered until both overlays apply cleanly and produce a loadable `libMinecraftClient.so`.
