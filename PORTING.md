@@ -31,3 +31,24 @@ Portable LCE's current README describes Android as a work-in-progress port that 
 ## Game data
 
 Do not commit copyrighted game binaries or assets to this repository. The app should use game data supplied by the user, where legally permitted, and explain any required files clearly.
+
+
+## Android backend recovery investigation (2026-11-23)
+
+A historical Android-support change exists in Portable LCE:
+
+- Initial Android-support commit: `fa6861b22142a2d1a3ba51da24f7d7795cd040ac`
+- It was merged by PR #401 and then explicitly reverted by commit `e452788fff8719c2535fa96d6666c91c09016c14` (merge revert `9c0dfd60d51d3886b1822b23c3b12a20ece976c8`).
+
+The old change added an Android shared-library target, GLES/EGL handling, Android logging, and an NDK cross-file. However, it modifies older source paths and build assumptions. It is not safe to cherry-pick onto current main without rebasing and compiling/testing it. The revert is a warning that this historical patch must be treated as a recovery reference, not as a known-good Android build.
+
+### Build result
+
+No Android engine library has been produced. The launcher build requires `android/lib/arm64-v8a/libMinecraftClient.so`; without that engine library, a launcher-only APK would not be a playable port. Do not publish a launcher-only APK as a Minecraft release.
+
+### Next implementation steps
+
+1. Rebase the historical Android/GLES changes against the current engine source layout.
+2. Build an AArch64 Android shared library with the NDK and resolve compile/link errors.
+3. Package it through the 4JCraft launcher.
+4. Test install, launch, rendering, input, audio, and world storage on an Android device before release.
