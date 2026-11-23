@@ -12,7 +12,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
  #include "java/ByteBuffer.h"
  #include "java/FloatBuffer.h"
  #include "java/IntBuffer.h"
-@@ -105,5 +105,11 @@
+@@ -105,5 +108,11 @@
  static const int MAX_SHARED_CTXS = 6;
 +#ifdef __ANDROID__
 +static EGLSurface s_sharedWins[MAX_SHARED_CTXS] = {};
@@ -76,7 +76,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
          s_sharedCtxCount++;
      }
      SDL_GL_MakeCurrent(s_window, s_glContext);
-@@ -730,4 +764,8 @@ void GLRenderer::InitialiseContext() {
+@@ -730,4 +773,8 @@ void GLRenderer::InitialiseContext() {
              if (s_sharedCtxs[i] == s_glCtx) {
 +#ifdef __ANDROID__
 +                eglMakeCurrent(s_eglDisplay, s_sharedWins[i], s_sharedWins[i],
@@ -85,7 +85,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
                  SDL_GL_MakeCurrent(s_sharedWins[i], s_glCtx);
 +#endif
                  return;
-@@ -746,6 +784,11 @@ void GLRenderer::InitialiseContext() {
+@@ -746,6 +793,11 @@ void GLRenderer::InitialiseContext() {
      for (int i = 0; i < s_sharedCtxCount; i++) {
 -        if (s_sharedCtxs[i] == shared)
 +        if (s_sharedCtxs[i] == shared) {
@@ -98,7 +98,7 @@ diff --git a/targets/platform/renderer/gl/GLRenderer.cpp b/targets/platform/rend
 +        }
      }
      s_glCtx = shared;
-@@ -812,5 +855,10 @@ void GLRenderer::Shutdown() {
+@@ -812,6 +864,11 @@ void GLRenderer::Shutdown() {
      for (int i = 0; i < s_sharedCtxCount; i++) {
 +#ifdef __ANDROID__
 +        if (s_sharedCtxs[i]) eglDestroyContext(s_eglDisplay, s_sharedCtxs[i]);
