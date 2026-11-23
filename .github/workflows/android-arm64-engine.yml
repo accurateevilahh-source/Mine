@@ -74,15 +74,15 @@ jobs:
           replace("targets/platform/stubs.h",
               "    static void glShadeModel(int mode) { ::glShadeModel(mode); }",
               """#ifdef __ANDROID__\n    static void glShadeModel(int) {}\n#else\n    static void glShadeModel(int mode) { ::glShadeModel(mode); }\n#endif""")
-          replace("targets/platform/stubs.h",
-              "};\\n#undef GL_ARRAY_BUFFER_ARB",
-              """};
-          #ifdef __ANDROID__
-          // GLES has no fixed-function lighting state entry points.
-          #define glShadeModel(mode) ((void)0)
-          #define glColorMaterial(face, mode) ((void)0)
-          #endif
-          #undef GL_ARRAY_BUFFER_ARB""")
+          replace("targets/minecraft/client/Lighting.cpp",
+              "    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);",
+              "    // GLES does not expose fixed-function glColorMaterial.")
+          replace("targets/minecraft/client/Lighting.cpp",
+              "    glShadeModel(GL_FLAT);",
+              "    // GLES does not expose fixed-function glShadeModel.")
+          replace("targets/minecraft/client/Minecraft.cpp",
+              "    glShadeModel(GL_SMOOTH);",
+              "    // GLES does not expose fixed-function glShadeModel.")
           replace("targets/platform/renderer/gl/GLRenderer.cpp",
               "#include \"platform/renderer/renderer.h\"",
               """#include \"platform/renderer/renderer.h\"\n\n#ifdef __ANDROID__\n// Legacy fixed-function enum values used only as internal state identifiers.\n#ifndef GL_PROJECTION\n#define GL_PROJECTION 0x1701\n#endif\n#ifndef GL_MODELVIEW_MATRIX\n#define GL_MODELVIEW_MATRIX 0x0BA6\n#endif\n#ifndef GL_PROJECTION_MATRIX\n#define GL_PROJECTION_MATRIX 0x0BA7\n#endif\n#ifndef GL_EXP\n#define GL_EXP 0x0800\n#endif\n#endif""")
