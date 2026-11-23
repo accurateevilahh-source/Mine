@@ -150,6 +150,7 @@ jobs:
             -Dbuildtype=debug \
             -Dunity=off \
             -Ddefault_library=static \
+            -Dsdl2:default_library=shared \
             -Drenderer=gles \
             -Dui_backend=java \
             -Denable_mimalloc=disabled
@@ -170,12 +171,17 @@ jobs:
           "$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
           mkdir -p "$GITHUB_WORKSPACE/dist"
           cp "$LIB" "$GITHUB_WORKSPACE/dist/libMinecraftClient.so"
+          SDL_LIB="$(find build-android -type f \( -name 'libSDL2.so' -o -name 'libSDL2.so.*' \) -print -quit)"
+          test -n "$SDL_LIB"
+          cp "$SDL_LIB" "$GITHUB_WORKSPACE/dist/libSDL2.so"
 
       - name: Upload engine library
         uses: actions/upload-artifact@v4
         with:
           name: minecraft-engine-android-arm64
-          path: dist/libMinecraftClient.so
+          path: |
+            dist/libMinecraftClient.so
+            dist/libSDL2.so
           if-no-files-found: error
 
   build-apk:
@@ -217,8 +223,10 @@ jobs:
         run: |
           set -euo pipefail
           test -s engine-artifact/libMinecraftClient.so
+          test -s engine-artifact/libSDL2.so
           mkdir -p launcher/android/lib/arm64-v8a
           cp engine-artifact/libMinecraftClient.so launcher/android/lib/arm64-v8a/libMinecraftClient.so
+          cp engine-artifact/libSDL2.so launcher/android/lib/arm64-v8a/libSDL2.so
           python3 - <<'PY'
           from pathlib import Path
           p = Path("launcher/android/wscript")
