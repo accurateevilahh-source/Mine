@@ -30,7 +30,13 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson ninja-build pkg-config file
+          sudo apt-get install -y python3-venv ninja-build pkg-config file
+          python3 -m venv "$RUNNER_TEMP/meson-venv"
+          "$RUNNER_TEMP/meson-venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/meson-venv/bin/python" -m pip install "meson==1.7.2"
+          echo "$RUNNER_TEMP/meson-venv/bin" >> "$GITHUB_PATH"
+          export PATH="$RUNNER_TEMP/meson-venv/bin:$PATH"
+          meson --version
 
       - name: Check out Portable LCE
         run: |
@@ -137,7 +143,7 @@ jobs:
       - name: Configure ARM64 GLES build
         working-directory: upstream
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
+          export PATH="$RUNNER_TEMP/meson-venv/bin:$PATH"
           meson setup build-android \
             --cross-file "$GITHUB_WORKSPACE/android-aarch64.ini" \
             --wrap-mode=forcefallback \
@@ -151,7 +157,7 @@ jobs:
       - name: Compile native engine
         working-directory: upstream
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
+          export PATH="$RUNNER_TEMP/meson-venv/bin:$PATH"
           meson compile -C build-android -v
 
       - name: Verify ARM64 shared library
@@ -170,4 +176,78 @@ jobs:
         with:
           name: minecraft-engine-android-arm64
           path: dist/libMinecraftClient.so
+          if-no-files-found: error
+
+  build-apk:
+    name: Package Android APK
+    needs: build-engine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out 4JCraft Android launcher
+        uses: actions/checkout@v4
+        with:
+          repository: ItzVladik/4jcraft-laucnher
+          ref: 598f666c2144153f74465c9a24ddc50ad7b65b6b
+          path: launcher
+
+      - name: Install Android SDK platform and build tools
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12266719
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+            platform-tools
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download ARM64 engine library
+        uses: actions/download-artifact@v4
+        with:
+          name: minecraft-engine-android-arm64
+          path: engine-artifact
+
+      - name: Integrate engine and align launcher SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s engine-artifact/libMinecraftClient.so
+          mkdir -p launcher/android/lib/arm64-v8a
+          cp engine-artifact/libMinecraftClient.so launcher/android/lib/arm64-v8a/libMinecraftClient.so
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("launcher/android/wscript")
+          s = p.read_text()
+          if "target_api=29" not in s:
+              raise SystemExit("Expected launcher target_api=29 setting was not found")
+          p.write_text(s.replace("target_api=29", "target_api=34", 1))
+          PY
+          for lib in libSDL2.so libc++_shared.so libcrypto.so; do
+            test -s "launcher/android/lib/arm64-v8a/$lib"
+          done
+
+      - name: Build and verify signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_SDK_HOME="$ANDROID_HOME"
+          cd launcher
+          python3 waf configure -T debug
+          python3 waf build
+          APK="build/android/mod-signed.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp "$APK" "$GITHUB_WORKSPACE/dist/Minecraft-LCE-Android-arm64-debug.apk"
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-lce-android-arm64-debug-apk
+          path: dist/Minecraft-LCE-Android-arm64-debug.apk
           if-no-files-found: error
