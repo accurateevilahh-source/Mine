@@ -155,22 +155,30 @@ jobs:
             -Dui_backend=java \
             -Denable_mimalloc=disabled
 
-      - name: Patch SDL2 Android HIDAPI and OpenSL ES linking
+      - name: Fix SDL2 Android HIDAPI and OpenSL ES configuration
         working-directory: upstream
         run: |
           python3 - <<'PY'
           from pathlib import Path
+
+          # SDL2's generic HIDAPI C implementation references platform_* HID
+          # functions. The Android launcher uses SDL's native Android joystick
+          # backend, so disable the optional HIDAPI layer rather than compiling
+          # Haiku-only C++ sources into the Android build.
+          for relative in ("subprojects/SDL2-2.32.8/src/hidapi/SDL_hidapi.c",
+                           "subprojects/SDL2-2.32.8/src/core/android/SDL_android.c"):
+              p = Path(relative)
+              s = p.read_text()
+              define = "#ifdef __ANDROID__\\n#define SDL_HIDAPI_DISABLED 1\\n#endif\\n"
+              if define not in s:
+                  p.write_text(define + s)
+
           p = Path("subprojects/SDL2-2.32.8/meson.build")
           s = p.read_text()
-          old_cpp = "if platform_is_winrt or platform_is_haiku"
-          new_cpp = "if platform_is_winrt or platform_is_haiku or platform_is_android"
           old_android = "extra_deps += [cc.find_library('android'), cc.find_library('log')]"
           new_android = "extra_deps += [cc.find_library('android'), cc.find_library('log'), cc.find_library('OpenSLES')]"
-          if s.count(old_cpp) != 1:
-              raise SystemExit("Expected SDL2 C++ source condition exactly once")
           if s.count(old_android) != 1:
               raise SystemExit("Expected SDL2 Android dependency line exactly once")
-          s = s.replace(old_cpp, new_cpp, 1)
           s = s.replace(old_android, new_android, 1)
           p.write_text(s)
           PY
@@ -270,6 +278,8 @@ jobs:
           APK="build/android/mod-signed.apk"
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libMinecraftClient.so'
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libSDL2.so'
           mkdir -p "$GITHUB_WORKSPACE/dist"
           cp "$APK" "$GITHUB_WORKSPACE/dist/Minecraft-LCE-Android-arm64-debug.apk"
 
@@ -279,3 +289,12 @@ jobs:
           name: minecraft-lce-android-arm64-debug-apk
           path: dist/Minecraft-LCE-Android-arm64-debug.apk
           if-no-files-found: error
+
+      - name: Publish verified APK to GitHub Releases
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_release == true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: Minecraft LCE Android ${{ inputs.release_tag }}
+          generate_release_notes: true
+          files: dist/Minecraft-LCE-Android-arm64-debug.apk
