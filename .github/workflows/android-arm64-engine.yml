@@ -68,6 +68,12 @@ jobs:
           replace("targets/app/common/Iggy/gdraw/gdraw.c",
               "#if defined(__APPLE__) || defined (__linux__)\n#include \"SDL_opengl.h\"",
               "#if defined(__APPLE__) || defined (__linux__) || defined(__ANDROID__)\n#if defined(__ANDROID__)\n#include \"SDL_opengles2.h\"\n#else\n#include \"SDL_opengl.h\"\n#endif")
+          replace("targets/platform/stubs.h",
+              "#include \"renderer/gl/gl_compat.h\"",
+              """#include \"renderer/gl/gl_compat.h\"\n\n#ifdef __ANDROID__\n#ifndef GL_COLOR_MATERIAL\n#define GL_COLOR_MATERIAL 0x0B57\n#endif\n// GLES has no fixed-function depth-clear or shade-model entry points.\n#define glClearDepth glClearDepthf\n#endif""")
+          replace("targets/platform/stubs.h",
+              "    static void glShadeModel(int mode) { ::glShadeModel(mode); }",
+              """#ifdef __ANDROID__\n    static void glShadeModel(int) {}\n#else\n    static void glShadeModel(int mode) { ::glShadeModel(mode); }\n#endif""")
           replace("targets/platform/renderer/gl/GLRenderer.cpp",
               "#include \"platform/renderer/renderer.h\"",
               """#include \"platform/renderer/renderer.h\"\n\n#ifdef __ANDROID__\n// Legacy fixed-function enum values used only as internal state identifiers.\n#ifndef GL_PROJECTION\n#define GL_PROJECTION 0x1701\n#endif\n#ifndef GL_MODELVIEW_MATRIX\n#define GL_MODELVIEW_MATRIX 0x0BA6\n#endif\n#ifndef GL_PROJECTION_MATRIX\n#define GL_PROJECTION_MATRIX 0x0BA7\n#endif\n#ifndef GL_EXP\n#define GL_EXP 0x0800\n#endif\n#endif""")
