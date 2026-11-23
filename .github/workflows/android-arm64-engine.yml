@@ -44,6 +44,31 @@ jobs:
           git -C upstream apply --recount --check "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
           git -C upstream apply --recount "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
           git -C upstream apply --recount "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("upstream")
+          def replace(path, old, new):
+              p = root / path
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f"Expected source block not found in {path}")
+              p.write_text(s.replace(old, new, 1))
+          replace("targets/platform/renderer/gl/gl3_loader.h",
+              "#include <GL/glew.h>",
+              "#ifdef __ANDROID__\n#include <GLES3/gl3.h>\n#else\n#include <GL/glew.h>\n#endif")
+          replace("targets/platform/renderer/gl/gl3_loader.h",
+              "static inline bool gl3_load() {\n    GLenum err = glewInit();",
+              "static inline bool gl3_load() {\n#ifdef __ANDROID__\n    return true; // GLES entry points are supplied by the Android NDK.\n#else\n    GLenum err = glewInit();")
+          replace("targets/platform/renderer/gl/gl3_loader.h",
+              "            (const char*)glewGetString(GLEW_VERSION));\n    return true;\n}",
+              "            (const char*)glewGetString(GLEW_VERSION));\n    return true;\n#endif\n}")
+          replace("targets/platform/renderer/gl/gl_compat.h",
+              "#include <GL/glew.h>",
+              "#ifdef __ANDROID__\n#include <GLES3/gl3.h>\n#else\n#include <GL/glew.h>\n#endif")
+          replace("targets/app/common/Iggy/gdraw/gdraw.c",
+              "#if defined(__APPLE__) || defined (__linux__)\n#include \"SDL_opengl.h\"",
+              "#if defined(__APPLE__) || defined (__linux__) || defined(__ANDROID__)\n#if defined(__ANDROID__)\n#include \"SDL_opengles2.h\"\n#else\n#include \"SDL_opengl.h\"\n#endif")
+          PY
 
       - name: Create Android ARM64 Meson cross file
         shell: bash
