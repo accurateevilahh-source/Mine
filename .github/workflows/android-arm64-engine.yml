@@ -1,0 +1,105 @@
+name: Android ARM64 engine build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - android-engine-recovery
+    paths:
+      - "patches/**"
+      - ".github/workflows/android-arm64-engine.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-engine:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out Mine
+        uses: actions/checkout@v4
+
+      - name: Install Android SDK and NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager "ndk;27.2.12479018"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip ninja-build pkg-config
+          python3 -m pip install --user meson
+
+      - name: Check out Portable LCE
+        run: |
+          git clone https://github.com/portable-lce/portable-lce.git upstream
+          git -C upstream checkout 550cd6511b5f48e25e2860863e33bcf09ce8a363
+
+      - name: Validate and apply Android recovery patches
+        run: |
+          git -C upstream apply --check "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
+          git -C upstream apply --check "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
+          git -C upstream apply "$GITHUB_WORKSPACE/patches/portable-lce-android-recovery.patch"
+          git -C upstream apply "$GITHUB_WORKSPACE/patches/portable-lce-android-egl-renderer.patch"
+
+      - name: Create Android ARM64 Meson cross file
+        shell: bash
+        run: |
+          NDK="$ANDROID_HOME/ndk/27.2.12479018"
+          TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          cat > "$GITHUB_WORKSPACE/android-aarch64.ini" <<EOF
+          [binaries]
+          c = '$TOOLCHAIN/aarch64-linux-android24-clang'
+          cpp = '$TOOLCHAIN/aarch64-linux-android24-clang++'
+          ar = '$TOOLCHAIN/llvm-ar'
+          strip = '$TOOLCHAIN/llvm-strip'
+          ranlib = '$TOOLCHAIN/llvm-ranlib'
+
+          [host_machine]
+          system = 'android'
+          cpu_family = 'aarch64'
+          cpu = 'aarch64'
+          endian = 'little'
+
+          [properties]
+          needs_exe_wrapper = true
+          EOF
+
+      - name: Configure ARM64 GLES build
+        working-directory: upstream
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          meson setup build-android \
+            --cross-file "$GITHUB_WORKSPACE/android-aarch64.ini" \
+            --wrap-mode=forcefallback \
+            -Dbuildtype=debug \
+            -Ddefault_library=static \
+            -Drenderer=gles \
+            -Dui_backend=java \
+            -Denable_mimalloc=disabled
+
+      - name: Compile native engine
+        working-directory: upstream
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          meson compile -C build-android -v
+
+      - name: Verify ARM64 shared library
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          LIB="$(find build-android -type f -name 'libMinecraftClient.so' -print -quit)"
+          test -n "$LIB"
+          file "$LIB"
+          llvm-readelf -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp "$LIB" "$GITHUB_WORKSPACE/dist/libMinecraftClient.so"
+
+      - name: Upload engine library
+        uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-engine-android-arm64
+          path: dist/libMinecraftClient.so
+          if-no-files-found: error
