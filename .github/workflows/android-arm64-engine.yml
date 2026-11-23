@@ -100,7 +100,7 @@ jobs:
                   raise SystemExit(f"Expected one regex match in {path}, found {count}")
               p.write_text(updated)
           replace_regex("targets/minecraft/client/multiplayer/MultiPlayerChunkCache.cpp",
-              r"if\\s*\\(\\s*std::atomic_ref<LevelChunk\\*>\\(cache\\[idx\\]\\)\\s*\\.compare_exchange_strong\\(expected,\\s*chunk,\\s*std::memory_order_release\\)\\s*\\)",
+              r"if\s*\(\s*std::atomic_ref<LevelChunk\*>\(cache\[idx\]\)\s*\.compare_exchange_strong\(expected,\s*chunk,\s*std::memory_order_release\)\s*\)",
               "if (__atomic_compare_exchange_n(&cache[idx], &expected, chunk, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED))")
           replace("targets/platform/renderer/gl/GLRenderer.cpp",
               "#include \"platform/renderer/renderer.h\"",
