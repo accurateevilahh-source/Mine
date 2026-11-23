@@ -155,6 +155,26 @@ jobs:
             -Dui_backend=java \
             -Denable_mimalloc=disabled
 
+      - name: Patch SDL2 Android HIDAPI and OpenSL ES linking
+        working-directory: upstream
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("subprojects/SDL2-2.32.8/meson.build")
+          s = p.read_text()
+          old_cpp = "if platform_is_winrt or platform_is_haiku"
+          new_cpp = "if platform_is_winrt or platform_is_haiku or platform_is_android"
+          old_android = "extra_deps += [cc.find_library('android'), cc.find_library('log')]"
+          new_android = "extra_deps += [cc.find_library('android'), cc.find_library('log'), cc.find_library('OpenSLES')]"
+          if s.count(old_cpp) != 1:
+              raise SystemExit("Expected SDL2 C++ source condition exactly once")
+          if s.count(old_android) != 1:
+              raise SystemExit("Expected SDL2 Android dependency line exactly once")
+          s = s.replace(old_cpp, new_cpp, 1)
+          s = s.replace(old_android, new_android, 1)
+          p.write_text(s)
+          PY
+
       - name: Compile native engine
         working-directory: upstream
         run: |
