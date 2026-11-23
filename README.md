@@ -17,7 +17,7 @@ This repository is the integration workspace. It does not contain the upstream g
 
 - [x] Create the Android port workspace
 - [ ] Inspect and pin compatible upstream revisions
-- [ ] Port/rebase the Android platform backend onto current Portable LCE
+- [x] Draft Android Meson/filesystem and EGL renderer recovery overlays (compile validation pending)\n- [ ] Apply and validate the Android platform backend against current Portable LCE
 - [ ] Build `libMinecraftClient.so` for `arm64-v8a`
 - [ ] Integrate the 4JCraft launcher
 - [ ] Add/import legally obtained game data
