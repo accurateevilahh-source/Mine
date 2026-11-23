@@ -96,6 +96,17 @@ jobs:
           replace("targets/minecraft/client/renderer/entity/SlimeRenderer.cpp",
               "        glEnable(GL_NORMALIZE);",
               "        // GLES has no fixed-function GL_NORMALIZE state.")
+          # The upstream renderer documents these glTexGeni calls as no-ops:
+          # its compatibility wrapper infers texture coordinates from glTexGen,
+          # which is also a no-op in this GLES path. GLES has no glTexGeni API.
+          for line in (
+              "        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);",
+              "        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);",
+              "        glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);",
+              "        glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);",
+          ):
+              replace("targets/minecraft/client/renderer/tileentity/TheEndPortalRenderer.cpp",
+                      line, "        // GLES has no fixed-function texture generation.")
           replace("targets/platform/stubs.h",
               "#undef GL_ARRAY_BUFFER_ARB",
               """#ifdef __ANDROID__
