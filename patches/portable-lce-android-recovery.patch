@@ -129,3 +129,67 @@ diff --git a/targets/minecraft/meson.build b/targets/minecraft/meson.build
      include_directories: include_directories('..'),
      cpp_args: global_cpp_args + global_cpp_defs,
  )
+
+diff --git a/targets/platform/renderer/gl/gl3_loader.h b/targets/platform/renderer/gl/gl3_loader.h
+--- a/targets/platform/renderer/gl/gl3_loader.h
++++ b/targets/platform/renderer/gl/gl3_loader.h
+@@ -8,7 +8,11 @@
+ #include <windows.h>
+ #endif
+ 
++#ifdef __ANDROID__
++#include <GLES3/gl3.h>
++#else
+ #include <GL/glew.h>
++#endif
+ 
+ #include <cstdio>
+ 
+@@ -32,6 +36,10 @@
+ #endif
+ 
+ static inline bool gl3_load() {
++#ifdef __ANDROID__
++    // GLES entry points are provided directly by the Android NDK headers.
++    return true;
++#else
+     GLenum err = glewInit();
+     if (err != GLEW_OK) {
+         fprintf(stderr, "[gl_loader] ERROR: glewInit failed: %s\\n",
+@@ -47,6 +55,7 @@
+     fprintf(stderr, "[gl_loader] GL %s loaded successfully.\\n",
+             (const char*)glewGetString(GLEW_VERSION));
+     return true;
++#endif
+ }
+diff --git a/targets/platform/renderer/gl/gl_compat.h b/targets/platform/renderer/gl/gl_compat.h
+--- a/targets/platform/renderer/gl/gl_compat.h
++++ b/targets/platform/renderer/gl/gl_compat.h
+@@ -14,7 +14,11 @@
+ // #include "gl3_loader.h"
+ // NOTE: gl3_loader.h must be included before these two
++#ifdef __ANDROID__
++#include <GLES3/gl3.h>
++#else
+ #include <GL/glew.h>
++#endif
+ 
+ #include <cstdint>
+ #include <cstdlib>
+diff --git a/targets/app/common/Iggy/gdraw/gdraw.c b/targets/app/common/Iggy/gdraw/gdraw.c
+--- a/targets/app/common/Iggy/gdraw/gdraw.c
++++ b/targets/app/common/Iggy/gdraw/gdraw.c
+@@ -7,8 +7,10 @@
+ #include <windows.h>
+ #endif
+ // this is a really, really nasty hack to make this shit compile on macOS
+-#if defined(__APPLE__) || defined (__linux__)
++#if defined(__APPLE__) || defined (__linux__) || defined(__ANDROID__)
++#if defined(__ANDROID__)
++#include "SDL_opengles2.h"
++#else
+ #include "SDL_opengl.h"
++#endif
+ 
+ typedef void(APIENTRY* PFNGLGENBUFFERSPROC)(GLsizei, GLuint*);
+ typedef void(APIENTRY* PFNGLDELETEBUFFERSPROC)(GLsizei, const GLuint*);
